@@ -2,7 +2,8 @@
 vendor
 tests/tmp
 tests/report
-tests/lumen/storage
+tests/lumen/storage/logs
+tools
 composer.lock
 .php_cs.cache
 .phpunit.result.cache

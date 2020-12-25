@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore\Concerns;
 
 use Boomdraw\RpcCore\Request as RpcRequest;
 use Laravel\Lumen\Concerns\RoutesRequests;
 use Laravel\Lumen\Http\Request as LumenRequest;
+use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -23,8 +26,10 @@ trait RequestManager
      *
      * @param SymfonyRequest|null $request
      * @return Response
+     * @throws NotFoundHttpException|SuspiciousOperationException
+     * @psalm-suppress LessSpecificImplementedReturnType
      */
-    public function dispatch($request = null)
+    public function dispatch($request = null): Response
     {
         if (! $request) {
             $request = SymfonyRequest::createFromGlobals();
@@ -44,7 +49,14 @@ trait RequestManager
         throw new NotFoundHttpException();
     }
 
-    protected function isRpcRequest($request)
+    /**
+     * Determine the request matches JsonRPC specification.
+     *
+     * @param SymfonyRequest $request
+     * @return bool
+     * @throws SuspiciousOperationException
+     */
+    protected function isRpcRequest(SymfonyRequest $request): bool
     {
         $rpc = config('app.rpc', true);
         if (! $rpc) {

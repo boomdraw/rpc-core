@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore;
 
 use Boomdraw\RpcCore\Exceptions\InvalidRequestRpcException;
 use Boomdraw\RpcCore\Exceptions\ParseErrorRpcException;
 use Illuminate\Http\Request as BaseRequest;
 use JsonException;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Throwable;
 
@@ -26,8 +29,13 @@ class Request extends BaseRequest
      * @param string|resource|null $content
      * @param array $context
      */
-    public function __construct(string $rpcMethod, array $request = [], array $server = [], $content = null, array $context = [])
-    {
+    public function __construct(
+        string $rpcMethod,
+        array $request = [],
+        array $server = [],
+        $content = null,
+        array $context = []
+    ) {
         parent::__construct([], $request, [], [], [], $server, $content);
 
         $this->rpcMethod = $rpcMethod;
@@ -38,23 +46,18 @@ class Request extends BaseRequest
      * Create an RPC request from a Symfony instance.
      *
      * @param SymfonyRequest $request
-     * @return static
+     * @return Request
      * @throws InvalidRequestRpcException
-     * @throws ParseErrorRpcException|JsonException
+     * @throws ParseErrorRpcException|JsonException|BadRequestException
      */
-    public static function createFromBase(SymfonyRequest $request)
+    public static function createFromBase(SymfonyRequest $request): self
     {
         if ($request instanceof self) {
             return $request;
         }
 
         $input = self::getInput($request);
-        $jsonrpc = data_get($input, 'jsonrpc');
-        $method = data_get($input, 'method');
-        if (! is_object($input) || ! $method || is_numeric($method[0]) || $jsonrpc !== '2.0') {
-            throw new InvalidRequestRpcException();
-        }
-
+        $method = self::extractMethod($input);
         $params = data_get($input, 'params', []);
         $args = data_get($params, 'args', []);
         $context = (array) data_get($params, 'context', []);
@@ -63,7 +66,7 @@ class Request extends BaseRequest
         }
         data_set($context, 'requestId', data_get($input, 'id'));
 
-        return new static($method, (array) $args, self::getServer(), json_encode($args, JSON_THROW_ON_ERROR), $context);
+        return new self($method, (array) $args, self::getServer(), json_encode($args, JSON_THROW_ON_ERROR), $context);
     }
 
     /**
@@ -102,8 +105,9 @@ class Request extends BaseRequest
     /**
      * Return request input.
      *
+     * @param SymfonyRequest $request
      * @return object
-     * @throws ParseErrorRpcException
+     * @throws ParseErrorRpcException|BadRequestException
      */
     protected static function getInput(SymfonyRequest $request): object
     {
@@ -112,14 +116,31 @@ class Request extends BaseRequest
             return (object) $input;
         }
 
-        $input = file_get_contents('php://input');
         try {
-            $input = json_decode($input, false, 512, JSON_THROW_ON_ERROR);
+            $input = file_get_contents('php://input');
+
+            return json_decode($input, false, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $exception) {
             throw new ParseErrorRpcException();
         }
+    }
 
-        return $input;
+    /**
+     * Extract JsonRPC method from input.
+     *
+     * @param object $input
+     * @return string
+     * @throws InvalidRequestRpcException
+     */
+    protected static function extractMethod(object $input): string
+    {
+        $jsonrpc = data_get($input, 'jsonrpc');
+        $method = data_get($input, 'method');
+        if (! $method || is_numeric($method[0]) || $jsonrpc !== '2.0') {
+            throw new InvalidRequestRpcException();
+        }
+
+        return $method;
     }
 
     /**

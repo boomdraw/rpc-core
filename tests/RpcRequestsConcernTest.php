@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore\Tests;
 
 use App\Rpc\Handlers\CustomHandler;

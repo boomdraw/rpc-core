@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore\Exceptions;
 
 use Boomdraw\RpcCore\Request as RpcRequest;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 use Laravel\Lumen\Exceptions\Handler as ExceptionHandler;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
@@ -31,37 +33,59 @@ class Handler extends ExceptionHandler
      * Render an exception into an HTTP response.
      *
      * @param Request $request
-     * @param Throwable $exception
+     * @param Throwable $e
      * @return Response
-     *
      * @throws Throwable
      */
-    public function render($request, Throwable $exception)
+    public function render($request, Throwable $e): Response
     {
-        if ($exception instanceof RpcException) {
-            return $exception->toResponse($request);
+        if ($e instanceof RpcException) {
+            return $e->toResponse($request);
         }
         if (! $request instanceof RpcRequest) {
-            return parent::render($request, $exception);
+            return parent::render($request, $e);
         }
-        if (method_exists($exception, 'getStatusCode')) {
-            $code = $exception->getStatusCode();
-        } else {
-            $code = $exception->getCode();
+        $e = $this->transformThrowableToRPCException($e);
+
+        return parent::render($request, $e);
+    }
+
+    /**
+     * Transform throwable to RPC exception.
+     *
+     * @param Throwable $e
+     * @return RpcException
+     */
+    protected function transformThrowableToRPCException(Throwable $e): RpcException
+    {
+        $code = $this->extractCode($e);
+        $message = $e->getMessage();
+        switch (true) {
+            case $e instanceof ModelNotFoundException:
+                return RpcException::make($message, -404);
+            case $e instanceof AuthorizationException:
+                return RpcException::make($message, -403);
+            case $e instanceof ValidationException:
+                return InvalidParamsRpcException::make($e->errors());
+            case 500 > $code && $code >= 400:
+                return RpcException::make($message, -$code);
+            default:
+                return ServerErrorRpcException::make($message);
         }
-        $message = $exception->getMessage();
-        if ($exception instanceof ModelNotFoundException) {
-            $exception = RpcException::make($message, -404);
-        } elseif ($exception instanceof AuthorizationException) {
-            $exception = RpcException::make($message, -403);
-        } elseif ($exception instanceof ValidationException) {
-            $exception = InvalidParamsRpcException::make($exception->errors());
-        } elseif (500 > $code && $code >= 400) {
-            $exception = RpcException::make($message, -$code);
-        } else {
-            $exception = ServerErrorRpcException::make($message);
+    }
+
+    /**
+     * Extract code from throwable.
+     *
+     * @param Throwable $e
+     * @return int
+     */
+    protected function extractCode(Throwable $e): int
+    {
+        if (method_exists($e, 'getStatusCode')) {
+            return $e->getStatusCode();
         }
 
-        return parent::render($request, $exception);
+        return $e->getCode();
     }
 }

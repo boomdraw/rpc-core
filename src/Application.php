@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore;
 
 use Boomdraw\RpcCore\Concerns\RequestManager;

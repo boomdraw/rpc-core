@@ -12,13 +12,15 @@
     }
   ],
   "require": {
-    "php": "^7.4",
+    "php": "^7.4|^8.0",
     "ext-json": "*",
-    "illuminate/support": "^6.0|^7.0"
+    "illuminate/support": "^6.0|^7.0|^8.0"
   },
   "require-dev": {
-    "laravel/lumen-framework": "^7.0",
+    "http-interop/http-factory-guzzle": "^1.0",
+    "laravel/lumen-framework": "^8.0",
     "phpunit/phpunit": "^8.0|^9.0",
+    "symfony/psr-http-message-bridge": "^2.0",
     "unicorn/lumen-testbench-core": "^4.3"
   },
   "autoload": {

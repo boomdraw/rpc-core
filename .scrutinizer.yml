@@ -1,5 +1,9 @@
-
 build:
+    environment:
+        variables:
+            XDEBUG_MODE: coverage
+        php:
+            version: 8.0.0
     nodes:
         analysis:
             tests:

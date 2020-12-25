@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore\Responses;
 
 class RpcEmptyResponse extends RpcBaseResponse

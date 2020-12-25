@@ -19,6 +19,7 @@ This package provides a request manager that passes the request to the RpcReques
 :---------|:----------
  6.x      | 1.x
  7.x      | 1.x
+ 8.x      | 1.x
  
 ## Installation
 

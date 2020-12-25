@@ -1,10 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Boomdraw\RpcCore\Responses;
 
 class RpcErrorResponse extends RpcBaseResponse
 {
-    public function __construct($code, $message, $data = null, $id = true)
+    /**
+     * RpcErrorResponse constructor.
+     *
+     * @param int $code
+     * @param string $message
+     * @param mixed $data
+     * @param bool $id
+     */
+    public function __construct(int $code, string $message = '', $data = null, bool $id = true)
     {
         $response = [
             'jsonrpc' => '2.0',

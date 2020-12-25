@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     /*
     | Handlers default namespace and suffix.
@@ -8,6 +10,7 @@ return [
         'path' => 'App\Rpc\Handlers',
         'suffix' => 'Handler',
     ],
+
     /*
      | List of custom handlers with its paths.
      | Handler key must be in a studly caps case
